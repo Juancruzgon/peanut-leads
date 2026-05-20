@@ -65,7 +65,8 @@ app.use('/api', (req, res, next) => {
 
 // ─── Apollo endpoints ────────────────────────────────────────────────────────
 
-// POST /api/search — Apollo People Search
+// POST /api/search — Apollo People API Search
+// Usa /mixed_people/api_search (optimizado para API, no consume créditos)
 app.post('/api/search', async (req, res) => {
   const { titles, industries, countries, page = 1, perPage = 25 } = req.body;
 
@@ -80,7 +81,7 @@ app.post('/api/search', async (req, res) => {
 
   try {
     const { data } = await axios.post(
-      `${APOLLO_BASE}/mixed_people/search`,
+      `${APOLLO_BASE}/mixed_people/api_search`, // ✅ endpoint correcto según docs
       payload,
       { headers: apolloHeaders() }
     );
@@ -120,7 +121,8 @@ app.post('/api/search', async (req, res) => {
   }
 });
 
-// POST /api/enrich — Apollo People Bulk Match
+// POST /api/enrich — Apollo People Enrichment (1 persona a la vez)
+// Usa /people/match según documentación oficial
 app.post('/api/enrich', async (req, res) => {
   const { personIds } = req.body;
 
@@ -131,25 +133,26 @@ app.post('/api/enrich', async (req, res) => {
     return res.status(500).json({ error: 'APOLLO_API_KEY no configurada en el servidor.' });
   }
 
-  const CHUNK_SIZE = 10;
-  const chunks = [];
-  for (let i = 0; i < personIds.length; i += CHUNK_SIZE) {
-    chunks.push(personIds.slice(i, i + CHUNK_SIZE));
-  }
-
   try {
     const allMatches = [];
-    for (const chunk of chunks) {
-      const { data } = await axios.post(
-        `${APOLLO_BASE}/people/bulk_match`,
-        {
-          details: chunk.map((id) => ({ id })),
-          reveal_personal_emails: true,
-          reveal_phone_number: true,
-        },
-        { headers: apolloHeaders() }
-      );
-      allMatches.push(...(data.matches || []));
+
+    for (const id of personIds) {
+      try {
+        const { data } = await axios.post(
+          `${APOLLO_BASE}/people/match`, // ✅ endpoint correcto según docs
+          {
+            id,
+            reveal_personal_emails: true,
+            reveal_phone_number: true,
+          },
+          { headers: apolloHeaders() }
+        );
+        if (data.person) {
+          allMatches.push(data.person);
+        }
+      } catch (err) {
+        console.error(`Enrich error for id ${id}:`, err.response?.data || err.message);
+      }
     }
 
     const enriched = allMatches.map((p) => ({
@@ -213,13 +216,13 @@ app.post('/api/send-email', async (req, res) => {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: smtpPort,
-    secure: smtpPort === 465, // true for SSL on 465, false for STARTTLS on 587
+    secure: smtpPort === 465,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
     tls: {
-      rejectUnauthorized: false, // GoDaddy SMTP compatibility
+      rejectUnauthorized: false,
     },
   });
 
@@ -231,7 +234,6 @@ app.post('/api/send-email', async (req, res) => {
       .replace(/{nombre}/gi, contact.name || 'estimado/a')
       .replace(/{empresa}/gi, contact.company || '');
 
-    // Convert plain text newlines to HTML paragraphs
     const htmlBody = personalizedBody
       .split('\n')
       .map((line) => (line.trim() ? `<p style="margin:0 0 12px">${line}</p>` : '<br>'))
