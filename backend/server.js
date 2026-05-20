@@ -68,7 +68,7 @@ app.use('/api', (req, res, next) => {
 // POST /api/search — Apollo People API Search
 // Usa /mixed_people/api_search (optimizado para API, no consume créditos)
 app.post('/api/search', async (req, res) => {
-  const { titles, industries, countries, page = 1, perPage = 25 } = req.body;
+  const { titles, industries, countries, keywords, page = 1, perPage = 25 } = req.body;
 
   if (!process.env.APOLLO_API_KEY) {
     return res.status(500).json({ error: 'APOLLO_API_KEY no configurada en el servidor.' });
@@ -78,6 +78,7 @@ app.post('/api/search', async (req, res) => {
   if (titles?.length) payload.person_titles = titles;
   if (industries?.length) payload.organization_industries = industries;
   if (countries?.length) payload.person_locations = countries;
+  if (keywords?.trim()) payload.q_keywords = keywords.trim();
 
   try {
     const { data } = await axios.post(

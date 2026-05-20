@@ -59,7 +59,7 @@ export default function FilterPanel({
         Filtros de búsqueda
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Cargo / Título</label>
           <MultiSelect
@@ -102,6 +102,18 @@ export default function FilterPanel({
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="mb-5">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Palabras clave</label>
+        <input
+          type="text"
+          value={filters.keywords}
+          onChange={(e) => onChange((f) => ({ ...f, keywords: e.target.value }))}
+          placeholder='Ej: "peanut", "groundnut", "nuts import"...'
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition disabled:opacity-50"
+          disabled={busy}
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

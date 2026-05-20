@@ -7,7 +7,7 @@ import ExportButtons from './components/ExportButtons';
 import EmailPanel from './components/EmailPanel';
 import LoginScreen from './components/LoginScreen';
 
-const DEFAULT_FILTERS = { titles: [], industry: '', country: '' };
+const DEFAULT_FILTERS = { titles: [], industry: '', country: '', keywords: '', perPage: 25 };
 
 export default function App() {
   const [token, setToken] = useState(null);
@@ -69,21 +69,16 @@ export default function App() {
     return <LoginScreen onLogin={setToken} />;
   }
 
-  const handleSearch = async () => {
-    if (filters.titles.length === 0 && !filters.industry && !filters.country) {
-      setError('Ingresa al menos un filtro de búsqueda para continuar.');
-      return;
-    }
+  const doSearch = async (page = 1) => {
     setLoading(true);
     setError(null);
-    setSelectedIds(new Set());
-    setEnrichedCount(0);
 
     try {
-      const body = {};
+      const body = { page, perPage: filters.perPage };
       if (filters.titles.length) body.titles = filters.titles;
       if (filters.industry) body.industries = [filters.industry];
       if (filters.country) body.countries = [filters.country];
+      if (filters.keywords?.trim()) body.keywords = filters.keywords.trim();
 
       const { data } = await axios.post('/api/search', body);
       setContacts(data.contacts);
@@ -97,6 +92,21 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = async () => {
+    if (filters.titles.length === 0 && !filters.industry && !filters.country && !filters.keywords?.trim()) {
+      setError('Ingresa al menos un filtro de búsqueda para continuar.');
+      return;
+    }
+    setSelectedIds(new Set());
+    setEnrichedCount(0);
+    doSearch(1);
+  };
+
+  const handlePageChange = (newPage) => {
+    setSelectedIds(new Set());
+    doSearch(newPage);
   };
 
   const handleEnrich = async () => {
@@ -224,10 +234,45 @@ export default function App() {
             />
 
             {pagination && (
-              <p className="text-xs text-center text-gray-400">
-                Mostrando {contacts.length.toLocaleString()} de{' '}
-                {pagination.total.toLocaleString()} resultados en Apollo.io
-              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1">
+                <p className="text-xs text-gray-400">
+                  Mostrando {contacts.length.toLocaleString()} de{' '}
+                  {pagination.total.toLocaleString()} resultados · Página{' '}
+                  {pagination.page} de {pagination.totalPages}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-gray-400">Por página:</span>
+                    <select
+                      value={filters.perPage}
+                      onChange={(e) => {
+                        setFilters((f) => ({ ...f, perPage: Number(e.target.value) }));
+                      }}
+                      className="border border-gray-200 rounded-md px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {[25, 50, 100].map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page <= 1 || loading}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      ← Anterior
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page >= pagination.totalPages || loading}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Siguiente →
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Export */}
