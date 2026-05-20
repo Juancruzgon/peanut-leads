@@ -87,7 +87,6 @@ app.post('/api/search', async (req, res) => {
     );
 
     const people = data.people || [];
-    if (people.length > 0) console.log('Apollo person:', JSON.stringify(people[0], null, 2));
     const pagination = data.pagination || {};
 
     const contacts = people.map((p) => ({
@@ -97,9 +96,9 @@ app.post('/api/search', async (req, res) => {
       lastName: p.last_name || null,
       title: p.title || null,
       company: p.organization?.name || p.employment_history?.[0]?.organization_name || null,
-      industry: p.organization?.industry || p.organization?.primary_industry || p.organization?.industry_tag_hash || null,
+      industry: p.organization?.industry || p.organization?.primary_industry || (p.organization?.has_industry ? 'Disponible' : null),
       location: [p.city, p.state, p.country].filter(Boolean).join(', ') || null,
-      country: p.country || p.present_raw_address || p.organization?.country || null,
+      country: p.country || p.present_raw_address || p.organization?.country || (p.has_country ? 'Disponible' : null),
       email: p.email || null,
       phone: p.sanitized_phone || null,
       linkedin: p.linkedin_url || null,
