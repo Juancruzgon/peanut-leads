@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const APOLLO_BASE = 'https://api.apollo.io/v1';
+const APOLLO_BASE = 'https://api.apollo.io/api/v1';
 const DAILY_EMAIL_LIMIT = 50;
 const JWT_SECRET = process.env.JWT_SECRET || 'peanut-leads-secret-change-in-production';
 
@@ -80,7 +80,7 @@ app.post('/api/search', async (req, res) => {
 
   try {
     const { data } = await axios.post(
-      `${APOLLO_BASE}/people/search`,
+      `${APOLLO_BASE}/mixed_people/search`,
       payload,
       { headers: apolloHeaders() }
     );
