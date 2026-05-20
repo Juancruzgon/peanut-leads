@@ -87,6 +87,7 @@ app.post('/api/search', async (req, res) => {
     );
 
     const people = data.people || [];
+    if (people.length > 0) console.log('Apollo person:', JSON.stringify(people[0], null, 2));
     const pagination = data.pagination || {};
 
     const contacts = people.map((p) => ({
