@@ -52,11 +52,7 @@ export default function App() {
       .catch(() => {});
   }, [token]);
 
-  // Show login screen if not authenticated
-  if (!token) {
-    return <LoginScreen onLogin={setToken} />;
-  }
-
+  // useMemo must be called before any conditional return (Rules of Hooks)
   const metrics = useMemo(
     () => ({
       total: pagination?.total ?? contacts.length,
@@ -67,6 +63,11 @@ export default function App() {
   );
 
   const hasEnrichedContacts = contacts.some((c) => c.email);
+
+  // Safe to return conditionally after all hooks have been called
+  if (!token) {
+    return <LoginScreen onLogin={setToken} />;
+  }
 
   const handleSearch = async () => {
     if (filters.titles.length === 0 && !filters.industry && !filters.country) {
