@@ -5,10 +5,12 @@ import FilterPanel from './components/FilterPanel';
 import ResultsTable from './components/ResultsTable';
 import ExportButtons from './components/ExportButtons';
 import EmailPanel from './components/EmailPanel';
+import LoginScreen from './components/LoginScreen';
 
 const DEFAULT_FILTERS = { titles: [], industry: '', country: '' };
 
 export default function App() {
+  const [token, setToken] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -19,12 +21,41 @@ export default function App() {
   const [enrichedCount, setEnrichedCount] = useState(0);
   const [dailyCount, setDailyCount] = useState(0);
 
-  // Fetch daily email count on mount
+  // Sync Authorization header whenever token changes
   useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  }, [token]);
+
+  // Global 401 interceptor — cualquier respuesta 401 limpia el token y muestra el login
+  useEffect(() => {
+    const id = axios.interceptors.response.use(
+      (res) => res,
+      (err) => {
+        if (err.response?.status === 401 && err.config?.url !== '/api/login') {
+          setToken(null);
+        }
+        return Promise.reject(err);
+      }
+    );
+    return () => axios.interceptors.response.eject(id);
+  }, []);
+
+  // Fetch daily email count once logged in
+  useEffect(() => {
+    if (!token) return;
     axios.get('/api/email-status')
       .then(({ data }) => setDailyCount(data.dailyCount))
-      .catch(() => {}); // non-critical
-  }, []);
+      .catch(() => {});
+  }, [token]);
+
+  // Show login screen if not authenticated
+  if (!token) {
+    return <LoginScreen onLogin={setToken} />;
+  }
 
   const metrics = useMemo(
     () => ({

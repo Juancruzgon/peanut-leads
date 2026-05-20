@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 app.use(cors());
@@ -10,6 +11,11 @@ app.use(express.json());
 
 const APOLLO_BASE = 'https://api.apollo.io/api/v1';
 const DAILY_EMAIL_LIMIT = 50;
+const JWT_SECRET = process.env.JWT_SECRET || 'peanut-leads-secret-change-in-production';
+
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET no configurado — usando clave por defecto. Configúrala en .env para producción.');
+}
 
 // In-memory daily email tracker (resets automatically each day)
 let emailTracker = { date: null, count: 0 };
@@ -26,6 +32,35 @@ const apolloHeaders = () => ({
   'Content-Type': 'application/json',
   'x-api-key': process.env.APOLLO_API_KEY,
   'Cache-Control': 'no-cache',
+});
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+// POST /api/login — pública, no requiere token
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Usuario y contraseña son requeridos.' });
+  }
+  if (username !== process.env.APP_USER || password !== process.env.APP_PASS) {
+    return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
+  }
+  const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '8h' });
+  res.json({ token });
+});
+
+// Todas las rutas definidas DESPUÉS de este middleware requieren JWT válido
+app.use('/api', (req, res, next) => {
+  const auth = req.headers['authorization'];
+  if (!auth?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Acceso denegado. Inicia sesión.' });
+  }
+  try {
+    req.user = jwt.verify(auth.slice(7), JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: 'Sesión expirada. Inicia sesión nuevamente.' });
+  }
 });
 
 // ─── Apollo endpoints ────────────────────────────────────────────────────────
