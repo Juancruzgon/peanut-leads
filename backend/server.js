@@ -143,7 +143,7 @@ app.post('/api/enrich', async (req, res) => {
           {
             id,
             reveal_personal_emails: true,
-            reveal_phone_number: true,
+            // reveal_phone_number: true,
           },
           { headers: apolloHeaders() }
         );
