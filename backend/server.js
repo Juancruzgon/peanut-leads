@@ -91,14 +91,14 @@ app.post('/api/search', async (req, res) => {
 
     const contacts = people.map((p) => ({
       id: p.id,
-      name: p.name || null,
+      name: p.name || [p.first_name, p.last_name].filter(Boolean).join(' ') || null,
       firstName: p.first_name || null,
       lastName: p.last_name || null,
       title: p.title || null,
       company: p.organization?.name || p.employment_history?.[0]?.organization_name || null,
-      industry: p.organization?.industry || null,
+      industry: p.organization?.industry_tag_hash || (Array.isArray(p.organization?.keywords) ? p.organization.keywords[0] : p.organization?.keywords) || null,
       location: [p.city, p.state, p.country].filter(Boolean).join(', ') || null,
-      country: p.country || null,
+      country: p.country || p.present_raw_address || null,
       email: p.email || null,
       phone: p.sanitized_phone || null,
       linkedin: p.linkedin_url || null,

@@ -11,9 +11,11 @@ const CARGO_OPTIONS = [
 
 const INDUSTRIES = [
   { value: '', label: 'Todas las industrias' },
-  { value: 'Food and Beverage Manufacturing', label: 'Food and Beverage Manufacturing' },
-  { value: 'International Trade and Development', label: 'International Trade and Development' },
-  { value: 'Wholesale Import and Export', label: 'Wholesale Import and Export' },
+  { value: 'food & beverages', label: 'Food & Beverages' },
+  { value: 'food production', label: 'Food Production' },
+  { value: 'wholesale', label: 'Wholesale' },
+  { value: 'import and export', label: 'Import and Export' },
+  { value: 'consumer goods', label: 'Consumer Goods' },
 ];
 
 const COUNTRIES = [
